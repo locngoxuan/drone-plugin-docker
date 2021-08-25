@@ -55,6 +55,12 @@ func main() {
 			EnvVar: "PLUGIN_DRY_RUN",
 		},
 		cli.StringFlag{
+			Name:   "docker-api-version",
+			Usage:  "specify version of docker api",
+			Value:  "1.40",
+			EnvVar: "PLUGIN_DOCKER_API_VERSION",
+		},
+		cli.StringFlag{
 			Name:   "dockerfile",
 			Usage:  "build dockerfile",
 			Value:  "Dockerfile",
@@ -125,6 +131,7 @@ func run(c *cli.Context) error {
 			Src:        pwd,
 			DryRun:     c.Bool("dry-run"),
 			Dockerfile: absDocker,
+			Version:    c.String("docker-api-version"),
 			Registries: registries,
 			Images:     images,
 			Versions:   c.StringSlice("versions"),

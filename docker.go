@@ -88,12 +88,13 @@ func auth(username, password string) (string, error) {
 	return base64.URLEncoding.EncodeToString(encodedJSON), nil
 }
 
-func connectDockerHost(ctx context.Context, hosts []string) (dockerCli DockerClient, err error) {
-	host, err := verifyDockerHostConnection(ctx, hosts)
+func connectDockerHost(ctx context.Context, hosts []string, version string) (dockerCli DockerClient, err error) {
+	host, err := verifyDockerHostConnection(ctx, hosts, version)
 	if err != nil {
 		return
 	}
 	_ = os.Setenv("DOCKER_HOST", host)
+	_ = os.Setenv("DOCKER_API_VERSION", version)
 	dockerCli.Client, err = client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
 		return
@@ -101,10 +102,14 @@ func connectDockerHost(ctx context.Context, hosts []string) (dockerCli DockerCli
 	return
 }
 
-func verifyDockerHostConnection(ctx context.Context, dockerHosts []string) (string, error) {
+func verifyDockerHostConnection(ctx context.Context, dockerHosts []string, version string) (string, error) {
 	var err error
 	for _, host := range dockerHosts {
 		err = os.Setenv("DOCKER_HOST", host)
+		if err != nil {
+			continue
+		}
+		err = os.Setenv("DOCKER_API_VERSION", version)
 		if err != nil {
 			continue
 		}

@@ -1,0 +1,6 @@
+FROM alpine:3.14
+
+LABEL maintainer="Loc Ngo <xuanloc0511@gmail.com>" 
+
+ADD release/linux/arm64/docker /bin/
+ENTRYPOINT [ "/bin/docker" ]

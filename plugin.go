@@ -36,6 +36,7 @@ type Config struct {
 	Host       string
 	DryRun     bool
 	Dockerfile string
+	Version    string
 	Registries []DockerRegistry
 	Images     []OutputDockerImage
 	Versions   []string
@@ -53,7 +54,7 @@ func (p Plugin) Exec() error {
 	if p.Config.Host == "" {
 		hosts = []string{p.Config.Host}
 	}
-	cli, err := connectDockerHost(ctx, hosts)
+	cli, err := connectDockerHost(ctx, hosts, p.Config.Version)
 
 	if err != nil {
 		return err
