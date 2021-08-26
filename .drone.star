@@ -1,8 +1,8 @@
 def main(ctx):
     stages = [
-        linux(ctx, "amd64","1.1.0"),
-        linux(ctx, "arm64","1.1.0"),
-        linux(ctx, "arm","1.1.0"),
+        linux(ctx, "amd64","1.2.0"),
+        linux(ctx, "arm64","1.2.0"),
+        linux(ctx, "arm","1.2.0"),
     ]
 
     return stages
