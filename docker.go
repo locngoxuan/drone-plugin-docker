@@ -38,7 +38,7 @@ func (c *DockerClient) RemoveImage(ctx context.Context, imageId string) ([]types
 	})
 }
 
-func (c *DockerClient) BuildImageWithOpts(ctx context.Context, tarFile string, tags []string, reg []DockerRegistry) (types.ImageBuildResponse, error) {
+func (c *DockerClient) BuildImageWithOpts(ctx context.Context, tarFile, dockerFile string, tags []string, reg []DockerRegistry) (types.ImageBuildResponse, error) {
 	authConfigs := make(map[string]types.AuthConfig)
 	for _, registry := range reg {
 		authConfigs[registry.Address] = types.AuthConfig{
@@ -52,7 +52,7 @@ func (c *DockerClient) BuildImageWithOpts(ctx context.Context, tarFile string, t
 		ForceRemove: true,
 		Tags:        tags,
 		PullParent:  true,
-		Dockerfile:  "Dockerfile",
+		Dockerfile:  dockerFile,
 		AuthConfigs: authConfigs,
 	}
 

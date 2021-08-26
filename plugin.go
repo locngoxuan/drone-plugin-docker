@@ -113,7 +113,9 @@ func (p Plugin) Exec() error {
 		}
 	}()
 
-	response, err := cli.BuildImageWithOpts(ctx, tarFile, images, p.Config.Registries)
+	_, dockerFileName := filepath.Split(p.Config.Dockerfile)
+
+	response, err := cli.BuildImageWithOpts(ctx, tarFile, dockerFileName, images, p.Config.Registries)
 	if err != nil {
 		return err
 	}
