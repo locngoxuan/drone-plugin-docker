@@ -1,11 +1,81 @@
 def main(ctx):
     stages = [
-        linux(ctx, "amd64","1.2.0"),
-        linux(ctx, "arm64","1.2.0"),
-        linux(ctx, "arm","1.2.0"),
+        linux(ctx, "amd64","1.3.0"),
+        linux(ctx, "arm64","1.3.0"),
+        linux(ctx, "arm","1.3.0"),
     ]
 
-    return stages
+    after = manifest(ctx, "1.3.0")
+
+    for s in stages:
+        for a in after:
+            a["depends_on"].append(s["name"])
+
+    return stages + after
+
+
+def manifest(ctx, version):
+    return [{
+        "kind": "pipeline",
+        "type": "docker",
+        "name": "manifest-%s" % (version),
+        "steps": [{
+            "name":"manifest",
+            "image":"plugins/manifest",
+            "settings": {
+                "target": "xuanloc0511/drone-plugin-docker:%s" % (version),
+                "template": "xuanloc0511/drone-plugin-docker:%s-OS-ARCH" % (version),
+                "username": {
+                    "from_secret": "docker_username",
+                },
+                "password": {
+                    "from_secret": "docker_password",
+                },
+                "platforms":[
+                    "linux/amd64",
+                    "linux/arm",
+                    "linux/arm64",
+                ],
+            },            
+        }],
+        "depends_on": [],
+        "trigger": {
+            "ref": [
+                "refs/heads/main",
+                "refs/tags/**",
+            ],
+        },
+    },{
+        "kind": "pipeline",
+        "type": "docker",
+        "name": "manifest-latest",
+        "steps": [{
+            "name":"manifest",
+            "image":"plugins/manifest",
+            "settings": {
+                "target": "xuanloc0511/drone-plugin-docker:latest",
+                "template": "xuanloc0511/drone-plugin-docker:latest-OS-ARCH",
+                "username": {
+                    "from_secret": "docker_username",
+                },
+                "password": {
+                    "from_secret": "docker_password",
+                },
+                "platforms":[
+                    "linux/amd64",
+                    "linux/arm",
+                    "linux/arm64",
+                ],
+            },            
+        }],
+        "depends_on": [],
+        "trigger": {
+            "ref": [
+                "refs/heads/main",
+                "refs/tags/**",
+            ],
+        },
+    }]
 
 def linux(ctx, arch, version):
     build = [

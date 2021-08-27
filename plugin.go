@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"io/ioutil"
@@ -37,13 +38,32 @@ type Config struct {
 	DryRun     bool
 	Dockerfile string
 	Version    string
+	TagFile    string
+	TagLatest  bool
 	Registries []DockerRegistry
 	Images     []OutputDockerImage
-	Versions   []string
+	Tags       []string
 }
 
 type Plugin struct {
 	Config Config
+}
+
+func readTagsFromFile(file string) ([]string, error) {
+	f, e := os.Open(file)
+	if e != nil {
+		return nil, e
+	}
+	defer func() {
+		_ = f.Close()
+	}()
+	var result []string
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		line := scanner.Text()
+		result = append(result, strings.TrimSpace(line))
+	}
+	return result, nil
 }
 
 func (p Plugin) Exec() error {
@@ -74,6 +94,32 @@ func (p Plugin) Exec() error {
 		_ = os.RemoveAll(tarFile)
 	}()
 
+	if len(p.Config.Tags) == 0 {
+		tags, err := readTagsFromFile(p.Config.TagFile)
+		if err != nil {
+			if !os.IsNotExist(err) {
+				return err
+			}
+		}
+
+		if tags != nil && len(tags) > 0 {
+			p.Config.Tags = append(p.Config.Tags, tags...)
+		}
+	}
+
+	if p.Config.TagLatest {
+		hasLatest := false
+		for _, v := range p.Config.Tags {
+			if v == "latest" {
+				hasLatest = true
+				break
+			}
+		}
+		if !hasLatest {
+			p.Config.Tags = append(p.Config.Tags, "latest")
+		}
+	}
+
 	var pushes []PushEntity
 	var images []string
 	for _, image := range p.Config.Images {
@@ -91,7 +137,7 @@ func (p Plugin) Exec() error {
 			}
 		}
 
-		for _, ver := range p.Config.Versions {
+		for _, ver := range p.Config.Tags {
 			ref := name + ":" + ver
 			log.Printf("image: %s", ref)
 			images = append(images, ref)

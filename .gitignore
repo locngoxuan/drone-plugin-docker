@@ -8,6 +8,9 @@
 !Dockerfile
 !Jenkinsfile
 releases
+.drone.semver
+.tags
+VERSION
 
 # Unignore all dirs
 !*/

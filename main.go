@@ -28,22 +28,6 @@ func main() {
 	app.Version = version
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
-			Name:   "remote.url",
-			Usage:  "git remote url",
-			EnvVar: "DRONE_REMOTE_URL",
-		},
-		cli.StringFlag{
-			Name:   "commit.sha",
-			Usage:  "git commit sha",
-			EnvVar: "DRONE_COMMIT_SHA",
-			Value:  "00000000",
-		},
-		cli.StringFlag{
-			Name:   "commit.ref",
-			Usage:  "git commit ref",
-			EnvVar: "DRONE_COMMIT_REF",
-		},
-		cli.StringFlag{
 			Name:   "host",
 			Usage:  "docker host endpoint",
 			Value:  "unix://var/socket/docker.sock",
@@ -85,10 +69,21 @@ func main() {
 			EnvVar: "PLUGIN_IMAGES",
 		},
 		cli.StringSliceFlag{
-			Name:   "versions",
-			Usage:  "list of image version",
-			Value:  &cli.StringSlice{"latest"},
-			EnvVar: "PLUGIN_VERSIONS",
+			Name:   "tags",
+			Usage:  "list of image tags",
+			Value:  &cli.StringSlice{},
+			EnvVar: "PLUGIN_TAGS",
+		},
+		cli.StringFlag{
+			Name:   "tagfile",
+			Usage:  "specify tag file",
+			Value:  ".tags",
+			EnvVar: "PLUGIN_TAGFILE",
+		},
+		cli.BoolFlag{
+			Name:   "tag-latest",
+			Usage:  "tag latest version",
+			EnvVar: "PLUGIN_TAG_LATEST",
 		},
 	}
 
@@ -129,12 +124,14 @@ func run(c *cli.Context) error {
 	plugin := &Plugin{
 		Config: Config{
 			Src:        pwd,
+			TagFile:    c.String("tagfile"),
+			TagLatest:  c.Bool("tag-latest"),
 			DryRun:     c.Bool("dry-run"),
 			Dockerfile: absDocker,
 			Version:    c.String("docker-api-version"),
 			Registries: registries,
 			Images:     images,
-			Versions:   c.StringSlice("versions"),
+			Tags:       c.StringSlice("tags"),
 		},
 	}
 	return plugin.Exec()
