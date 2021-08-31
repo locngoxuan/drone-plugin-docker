@@ -38,10 +38,10 @@ func (c *DockerClient) RemoveImage(ctx context.Context, imageId string) ([]types
 	})
 }
 
-func (c *DockerClient) BuildImageWithOpts(ctx context.Context, tarFile, dockerFile string, tags []string, reg []DockerRegistry) (types.ImageBuildResponse, error) {
+func (c *DockerClient) BuildImageWithOpts(ctx context.Context, tarFile, dockerFile string, tags []string, reg map[string]DockerRegistry) (types.ImageBuildResponse, error) {
 	authConfigs := make(map[string]types.AuthConfig)
-	for _, registry := range reg {
-		authConfigs[registry.Address] = types.AuthConfig{
+	for key, registry := range reg {
+		authConfigs[key] = types.AuthConfig{
 			Username: registry.Username,
 			Password: registry.Password,
 		}

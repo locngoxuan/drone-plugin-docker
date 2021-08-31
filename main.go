@@ -56,10 +56,10 @@ func main() {
 			Value:  ".",
 			EnvVar: "PLUGIN_CONTEXT",
 		},
-		cli.StringFlag{
+		cli.StringSliceFlag{
 			Name:   "registries",
 			Usage:  "list of private docker registries",
-			Value:  "",
+			Value:  &cli.StringSlice{},
 			EnvVar: "PLUGIN_REGISTRIES",
 		},
 		cli.StringSliceFlag{
@@ -103,21 +103,21 @@ func run(c *cli.Context) error {
 		return err
 	}
 	log.Printf("dockerfile: %s", absDocker)
-	registrieJson := c.String("registries")
-	var registries []DockerRegistry
-	if strings.TrimSpace(registrieJson) != "" {
-		err = json.Unmarshal([]byte(registrieJson), &registries)
+	jsonArrRegistry := c.StringSlice("registries")
+
+	registries := make(map[string]DockerRegistry)
+	for _, jsonElem := range jsonArrRegistry {
+		var elem DockerAuth
+		err = json.Unmarshal([]byte(jsonElem), &elem)
 		if err != nil {
 			return err
 		}
-	}
-
-	imageJson := c.String("images")
-	var images []OutputDockerImage
-	if strings.TrimSpace(imageJson) != "" {
-		err = json.Unmarshal([]byte(imageJson), &images)
-		if err != nil {
-			return err
+		for registry, auth := range elem.Auths {
+			if v := strings.TrimSpace(auth.Auth); v != "" {
+				auth.Username, auth.Password = decode(v)
+			}
+			log.Printf("add registry %s", registry)
+			registries[registry] = auth
 		}
 	}
 
@@ -130,7 +130,7 @@ func run(c *cli.Context) error {
 			Dockerfile: absDocker,
 			Version:    c.String("docker_api_version"),
 			Registries: registries,
-			Images:     images,
+			Images:     c.StringSlice("images"),
 			Tags:       c.StringSlice("tags"),
 		},
 	}

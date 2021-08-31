@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"context"
+	"encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -22,14 +23,29 @@ type PushEntity struct {
 }
 
 type DockerRegistry struct {
-	Address  string `json:"address,omitempty"`
 	Username string `json:"username,omitempty"`
 	Password string `json:"password,omitempty"`
+	Auth     string `json:"auth,omitempty"`
 }
 
-type OutputDockerImage struct {
-	Registry string `json:"registry,omitempty"`
-	Name     string `json:"name,omitempty"`
+// decode returns the decoded credentials.
+func decode(s string) (username, password string) {
+	d, err := base64.StdEncoding.DecodeString(s)
+	if err != nil {
+		return
+	}
+	parts := strings.SplitN(string(d), ":", 2)
+	if len(parts) > 0 {
+		username = parts[0]
+	}
+	if len(parts) > 1 {
+		password = parts[1]
+	}
+	return
+}
+
+type DockerAuth struct {
+	Auths map[string]DockerRegistry `json:"auths,omitempty"`
 }
 
 type Config struct {
@@ -40,8 +56,8 @@ type Config struct {
 	Version    string
 	TagFile    string
 	TagLatest  bool
-	Registries []DockerRegistry
-	Images     []OutputDockerImage
+	Registries map[string]DockerRegistry
+	Images     []string
 	Tags       []string
 }
 
@@ -122,23 +138,18 @@ func (p Plugin) Exec() error {
 
 	var pushes []PushEntity
 	var images []string
-	for _, image := range p.Config.Images {
-		name := image.Name
-		if !strings.HasPrefix(name, image.Registry) && strings.TrimSpace(image.Registry) != "" {
-			name = strings.TrimSpace(image.Registry) + "/" + image.Name
-		}
-
+	for _, imgName := range p.Config.Images {
 		uname := ""
 		pass := ""
-		for _, reg := range p.Config.Registries {
-			if reg.Address == image.Registry {
-				uname = reg.Username
-				pass = reg.Password
+		for regName, regAuth := range p.Config.Registries {
+			if strings.HasPrefix(imgName, regName) {
+				uname = regAuth.Username
+				pass = regAuth.Password
 			}
 		}
 
 		for _, ver := range p.Config.Tags {
-			ref := name + ":" + ver
+			ref := imgName + ":" + ver
 			log.Printf("image: %s", ref)
 			images = append(images, ref)
 			pushes = append(pushes, PushEntity{
