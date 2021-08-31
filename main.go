@@ -34,12 +34,12 @@ func main() {
 			EnvVar: "PLUGIN_HOST",
 		},
 		cli.BoolFlag{
-			Name:   "dry-run",
+			Name:   "dry_run",
 			Usage:  "dry run disables docker push",
 			EnvVar: "PLUGIN_DRY_RUN",
 		},
 		cli.StringFlag{
-			Name:   "docker-api-version",
+			Name:   "docker_api_version",
 			Usage:  "specify version of docker api",
 			Value:  "1.40",
 			EnvVar: "PLUGIN_DOCKER_API_VERSION",
@@ -81,7 +81,7 @@ func main() {
 			EnvVar: "PLUGIN_TAGFILE",
 		},
 		cli.BoolFlag{
-			Name:   "tag-latest",
+			Name:   "tag_latest",
 			Usage:  "tag latest version",
 			EnvVar: "PLUGIN_TAG_LATEST",
 		},
@@ -125,10 +125,10 @@ func run(c *cli.Context) error {
 		Config: Config{
 			Src:        pwd,
 			TagFile:    c.String("tagfile"),
-			TagLatest:  c.Bool("tag-latest"),
-			DryRun:     c.Bool("dry-run"),
+			TagLatest:  c.Bool("tag_latest"),
+			DryRun:     c.Bool("dry_run"),
 			Dockerfile: absDocker,
-			Version:    c.String("docker-api-version"),
+			Version:    c.String("docker_api_version"),
 			Registries: registries,
 			Images:     images,
 			Tags:       c.StringSlice("tags"),
