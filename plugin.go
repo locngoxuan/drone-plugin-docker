@@ -51,7 +51,6 @@ type DockerAuth struct {
 type Config struct {
 	Src        string
 	Host       string
-	DryRun     bool
 	Dockerfile string
 	Version    string
 	TagFile    string

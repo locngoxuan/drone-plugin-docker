@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -33,11 +34,6 @@ func main() {
 			Value:  "unix://var/socket/docker.sock",
 			EnvVar: "PLUGIN_HOST",
 		},
-		cli.BoolFlag{
-			Name:   "dry_run",
-			Usage:  "dry run disables docker push",
-			EnvVar: "PLUGIN_DRY_RUN",
-		},
 		cli.StringFlag{
 			Name:   "docker_api_version",
 			Usage:  "specify version of docker api",
@@ -57,10 +53,16 @@ func main() {
 			EnvVar: "PLUGIN_CONTEXT",
 		},
 		cli.StringSliceFlag{
-			Name:   "registries",
-			Usage:  "list of private docker registries",
+			Name:   "registry_envs",
+			Usage:  "list of environment registry variables",
 			Value:  &cli.StringSlice{},
-			EnvVar: "PLUGIN_REGISTRIES",
+			EnvVar: "PLUGIN_REGISTRY_ENVS",
+		},
+		cli.StringFlag{
+			Name:   "registry",
+			Usage:  "specify registry configuration file",
+			Value:  "",
+			EnvVar: "PLUGIN_REGISTRY",
 		},
 		cli.StringSliceFlag{
 			Name:   "images",
@@ -103,12 +105,35 @@ func run(c *cli.Context) error {
 		return err
 	}
 	log.Printf("dockerfile: %s", absDocker)
-	jsonArrRegistry := c.StringSlice("registries")
+	registryEnvs := c.StringSlice("registry_envs")
 
 	registries := make(map[string]DockerRegistry)
-	for _, jsonElem := range jsonArrRegistry {
+	for _, key := range registryEnvs {
+		// read from settings
+		v := strings.TrimSpace(os.Getenv(key))
 		var elem DockerAuth
-		err = json.Unmarshal([]byte(jsonElem), &elem)
+		err = json.Unmarshal([]byte(v), &elem)
+		if err != nil {
+			return err
+		}
+		for registry, auth := range elem.Auths {
+			if v := strings.TrimSpace(auth.Auth); v != "" {
+				auth.Username, auth.Password = decode(v)
+			}
+			log.Printf("add registry %s", registry)
+			registries[registry] = auth
+		}
+	}
+
+	v := strings.TrimSpace(c.String("registry"))
+	if v != "" {
+		// read from registry file
+		bs, err := ioutil.ReadFile(v)
+		if err != nil {
+			return err
+		}
+		var elem DockerAuth
+		err = json.Unmarshal(bs, &elem)
 		if err != nil {
 			return err
 		}
@@ -126,7 +151,6 @@ func run(c *cli.Context) error {
 			Src:        pwd,
 			TagFile:    c.String("tagfile"),
 			TagLatest:  c.Bool("tag_latest"),
-			DryRun:     c.Bool("dry_run"),
 			Dockerfile: absDocker,
 			Version:    c.String("docker_api_version"),
 			Registries: registries,
